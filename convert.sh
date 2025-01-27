@@ -31,4 +31,3 @@ fi
 
 # Chama a função para processar o vídeo
 process_video "$1" "$2"
-

@@ -75,4 +75,3 @@ fi
 
 # Chama a função para processar o diretório
 process_directory "$1"
-
