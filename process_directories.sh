@@ -43,7 +43,7 @@ process_directory() {
         echo "Processando: $input_file"
         
         # Chama o ffmpeg para converter o arquivo
-        < /dev/null ffmpeg -i "$input_file" -c:v libx264 -c:a aac -strict experimental "$output_file"
+        < /dev/null ffmpeg -i "$input_file" -c:v libx264 -c:a aac "$output_file"
         
         # Verifica o código de saída do ffmpeg
         if [ $? -eq 0 ]; then
