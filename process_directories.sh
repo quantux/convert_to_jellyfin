@@ -8,12 +8,8 @@ check_codecs() {
     video_codec=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$input_file")
     audio_codec=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$input_file")
     
-    # Verificar se o vídeo é H.264 e o áudio é AAC
-    if [[ "$video_codec" == "h264" && "$audio_codec" == "aac" ]]; then
-        return 0 # Os codecs estão corretos
-    else
-        return 1 # Os codecs não estão corretos
-    fi
+    # Retornar os codecs do arquivo
+    echo "$video_codec" "$audio_codec"
 }
 
 # Função para percorrer diretórios e converter arquivos
@@ -30,20 +26,31 @@ process_directory() {
         
         echo "Verificando: $input_file"
         
-        # Verificar os codecs do arquivo
-        if check_codecs "$input_file"; then
-            echo "O arquivo já possui os codecs corretos (H.264 e AAC). Ignorando: $input_file"
-            continue
-        fi
+        # Obter os codecs do arquivo
+        codecs=$(check_codecs "$input_file")
+        video_codec=$(echo "$codecs" | awk '{print $1}')
+        audio_codec=$(echo "$codecs" | awk '{print $2}')
         
         # Gerar o caminho do arquivo de saída com extensão .mp4
         output_file="$(dirname "$input_file")/$(basename "${input_file%.*}")-converted.mp4"
         final_file="$(dirname "$input_file")/$(basename "${input_file%.*}").mp4"
         
-        echo "Processando: $input_file"
-        
-        # Chama o ffmpeg para converter o arquivo
-        < /dev/null ffmpeg -i "$input_file" -c:v libx264 -c:a aac "$output_file"
+        if [[ "$video_codec" == "h264" && "$audio_codec" == "aac" ]]; then
+            echo "O arquivo já possui os codecs corretos (H.264 e AAC). Ignorando: $input_file"
+            continue
+        elif [[ "$video_codec" != "h264" && "$audio_codec" == "aac" ]]; then
+            echo "O arquivo tem o áudio AAC, mas o vídeo não é H.264. Convertendo o vídeo para H.264."
+            # Converte apenas o vídeo para H.264 e copia o áudio AAC
+            < /dev/null ffmpeg -i "$input_file" -c:v h264_nvenc -c:a copy "$output_file"
+        elif [[ "$video_codec" == "h264" && "$audio_codec" != "aac" ]]; then
+            echo "O arquivo tem o vídeo H.264, mas o áudio não é AAC. Convertendo o áudio para AAC."
+            # Converte apenas o áudio para AAC e copia o vídeo H.264
+            < /dev/null ffmpeg -i "$input_file" -c:v copy -c:a aac "$output_file"
+        else
+            echo "Convertendo o vídeo e o áudio para H.264 e AAC."
+            # Converte o vídeo e o áudio para H.264 e AAC
+            < /dev/null ffmpeg -i "$input_file" -c:v h264_nvenc -c:a aac "$output_file"
+        fi
         
         # Verifica o código de saída do ffmpeg
         if [ $? -eq 0 ]; then
