@@ -53,8 +53,8 @@ process_directory() {
         output_file="$(dirname "$input_file")/$(basename "${input_file%.*}")-converted.mp4"
         final_file="$(dirname "$input_file")/$(basename "${input_file%.*}").mp4"
 
-        # Se container não for mp4, força conversão
-        if [[ "$container_format" != mp4 ]]; then
+        # Verifica se container contém 'mp4'
+        if ! echo "$container_format" | grep -q '\bmp4\b'; then
             echo "Container não é MP4. Será convertido."
             force_convert=true
         else
